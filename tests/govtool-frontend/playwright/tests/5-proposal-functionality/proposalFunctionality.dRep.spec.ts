@@ -225,46 +225,60 @@ test.describe("Perform voting", () => {
     });
   });
 
-  test("5L. Should update context on an already voted governance action without changing the vote", async ({}, testInfo) => {
-    test.setTimeout(testInfo.timeout + 2 * environments.txTimeOut);
+  async function runUpdateContextTest({
+  testInfo,
+  useIpfs = false,
+  }: {
+      testInfo: any;
+      useIpfs?: boolean;
+    }) {
+      test.setTimeout(testInfo.timeout + 2 * environments.txTimeOut);
 
-    await govActionDetailsPage.vote();
+      await govActionDetailsPage.vote();
 
-    const governanceActionsPage = new GovernanceActionsPage(
-      govActionDetailsPage.currentPage
-    );
+      const governanceActionsPage = new GovernanceActionsPage(
+        govActionDetailsPage.currentPage
+      );
 
-    await governanceActionsPage.currentPage.reload();
+      await governanceActionsPage.currentPage.reload();
+      await governanceActionsPage.votedTab.click();
 
-    await governanceActionsPage.votedTab.click();
+      await govActionDetailsPage.currentPage.evaluate(() => window.scrollTo(0, 500));
 
-    await govActionDetailsPage.currentPage.evaluate(() =>
-      window.scrollTo(0, 500)
-    );
+      await expect(
+        govActionDetailsPage.currentPage.getByTestId("my-vote").getByText("Yes")
+      ).toBeVisible();
 
-    await expect(
-      govActionDetailsPage.currentPage.getByTestId("my-vote").getByText("Yes")
-    ).toBeVisible();
+      govActionDetailsPage = await governanceActionsPage.viewFirstVotedProposal();
 
-    govActionDetailsPage = await governanceActionsPage.viewFirstVotedProposal();
+      const fakerContext = faker.lorem.sentence(200);
+      await govActionDetailsPage.vote(fakerContext, true, useIpfs);
 
-    const fakerContext = faker.lorem.sentence(200)
-    await govActionDetailsPage.vote(fakerContext, true);
+      await govActionDetailsPage.currentPage.reload();
+      await governanceActionsPage.votedTab.click();
 
-    await govActionDetailsPage.currentPage.reload();
+      govActionDetailsPage = await governanceActionsPage.viewFirstVotedProposal();
 
-    await governanceActionsPage.votedTab.click();
+      await govActionDetailsPage.currentPage.getByTestId("yes-radio").isVisible();
 
-    govActionDetailsPage = await governanceActionsPage.viewFirstVotedProposal();
-    
-    await govActionDetailsPage.currentPage.getByTestId("yes-radio").isVisible();
+      await govActionDetailsPage.currentPage.getByTestId("show-more-button").click();
+      await govActionDetailsPage.currentPage.waitForTimeout(2000);
 
-    await govActionDetailsPage.currentPage.getByTestId("show-more-button").click();
-    await govActionDetailsPage.currentPage.waitForTimeout(2000);
-    
-    const voteRationaleContext = await govActionDetailsPage.currentPage.getByTestId("vote-rationale-context");
-    await expect(voteRationaleContext).toContainText(fakerContext);
-  });
+      const voteRationaleContext =
+        await govActionDetailsPage.currentPage.getByTestId("vote-rationale-context");
+
+      await expect(voteRationaleContext).toContainText(fakerContext);
+    }
+
+  test("5L_1. Should update context on an already voted governance action without changing the vote (Download and store yourself)", async ({}, testInfo) => {
+      await runUpdateContextTest({ testInfo, useIpfs: false });
+    });
+
+  test("5L_2. Should update context on an already voted governance action without changing the vote (IPFS)", async ({}, testInfo) => {
+      await runUpdateContextTest({ testInfo, useIpfs: true });
+    });
+
+
 
   test("5I. Should view the vote details,when viewing governance action already voted by the DRep", async ({}, testInfo) => {
     test.setTimeout(testInfo.timeout + environments.txTimeOut);
