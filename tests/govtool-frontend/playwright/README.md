@@ -198,7 +198,7 @@ Each test suite can be run in **UI** or **Headless** mode.
 
 #### 1. **Delegation Pillar**
 
-- **Pre-requisite**: Ensure the faucet address holds at least **12,000 ADA**.
+- **Pre-requisite**: Ensure the faucet address holds at least **14,000 ADA**.
 
 #### 🖥️ UI Mode
 
